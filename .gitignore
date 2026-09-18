@@ -1,0 +1,19 @@
+# @"
+# node_modules/
+# dist/
+# build/
+# .env
+# .env.*
+# !.env.example
+# .vscode/
+# .idea/
+# "@ | Set-Content .gitignore
+
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
