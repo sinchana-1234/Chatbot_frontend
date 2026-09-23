@@ -35,6 +35,7 @@ interface ChatMessage {
     agpChartData?: { time_blocks: any[] | null; daily_metrics: any[]; summary?: any; tir?: any };
     ehba1cTirData?: { periods: any[]; device_cycles: any[]; first_day?: any; last_day?: any };
     chartData?: ChartPayload;
+    suggestions?: { label: string; query: string }[];
 }
 
 const Chatbot: React.FC = () => {
@@ -226,6 +227,7 @@ const Chatbot: React.FC = () => {
             const chartData = data.chart_data;
             const agpChartData = data.agpChartData;
             const ehba1cTirData = data.ehba1cTirData;
+            const suggestions = data.suggestions;
             setChatHistory((prev) => [
                 ...prev,
                 {
@@ -235,6 +237,7 @@ const Chatbot: React.FC = () => {
                     chartData: chartData,
                     agpChartData: agpChartData,
                     ehba1cTirData: ehba1cTirData,
+                    suggestions: suggestions,
                 },
             ]);
         } catch (error) {
@@ -562,7 +565,7 @@ const Chatbot: React.FC = () => {
                     <div className="min-h-90 flex-1 overflow-y-auto bg-gray-100">
                         <div className="p-3">
                             {chatHistory.map((chat, index) => (
-                                <div key={index} className={`flex ${chat.role === "user" ? "justify-end" : "justify-start"} mb-3`}>
+                                <div key={index} className={`flex flex-col ${chat.role === "user" ? "items-end" : "items-start"} mb-3`}>
                                     <div
                                         className={`max-w-[85%] rounded-lg p-3 shadow ${
                                             chat.role === "user" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
@@ -589,6 +592,19 @@ const Chatbot: React.FC = () => {
                                             <ChatChart data={chat.chartData} />
                                         )}
                                     </div>
+                                    {chat.role === "bot" && chat.suggestions && chat.suggestions.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {chat.suggestions.map((s, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => handleSendMessage(s.query)}
+                                                    className="rounded border border-blue-300 bg-white px-3 py-1 text-sm text-blue-700 hover:bg-blue-50"
+                                                >
+                                                    {s.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                             {/* Loading indicator */}
