@@ -156,6 +156,30 @@ export default function ChatChart({ data }: ChatChartProps) {
                             <Tooltip content={<CompactTooltip />} />
                             <Bar dataKey={data.series[0].name} fill={COLORS[0]} radius={[3, 3, 0, 0]} />
                         </BarChart>
+                    ) : data.series.length === 1 && !data.dual_axis ? (
+                        // Single-series line (e.g. glucose trend) → smooth gradient
+                        // area for a clean CGM-style look.
+                        <AreaChart data={chartRows} margin={commonMargin}>
+                            <defs>
+                                <linearGradient id="chatAreaFill" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor={data.color || COLORS[0]} stopOpacity={0.35} />
+                                    <stop offset="95%" stopColor={data.color || COLORS[0]} stopOpacity={0.02} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef1f5" />
+                            {xAxis}
+                            <YAxis tick={{ fontSize: 10 }} domain={['dataMin - 5', 'dataMax + 5']} />
+                            <Tooltip content={<CompactTooltip />} />
+                            <Area
+                                type="monotone"
+                                dataKey={data.series[0].name}
+                                stroke={data.color || COLORS[0]}
+                                strokeWidth={2.5}
+                                fill="url(#chatAreaFill)"
+                                dot={{ r: 2, fill: data.color || COLORS[0], strokeWidth: 0 }}
+                                activeDot={{ r: 5, strokeWidth: 0 }}
+                            />
+                        </AreaChart>
                     ) : (
                         <LineChart data={chartRows} margin={commonMargin}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -170,7 +194,9 @@ export default function ChatChart({ data }: ChatChartProps) {
                                 <Line key={s.name}
                                     yAxisId={data.dual_axis && i > 0 ? "right" : "left"}
                                     type="monotone" dataKey={s.name}
-                                    stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} />
+                                    stroke={COLORS[i % COLORS.length]} strokeWidth={2}
+                                    dot={{ r: 1.5, fill: COLORS[i % COLORS.length], strokeWidth: 0 }}
+                                    activeDot={{ r: 4 }} />
                             ))}
                         </LineChart>
                     )}
