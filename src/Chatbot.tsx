@@ -7,6 +7,7 @@ import AGPChart from "./AGPChart";
 import TIRChart from "./TIRChart";
 import EHbA1cTIRChart from "./EHbA1cTIRChart";
 import { getAuthToken } from "./auth";
+import FoodLogChart, { FoodLogMeal } from "./FoodLogChart";
 
 // Extend Window interface for potential browser APIs
 declare global {
@@ -36,6 +37,7 @@ interface ChatMessage {
     ehba1cTirData?: { periods: any[]; device_cycles: any[]; first_day?: any; last_day?: any };
     chartData?: ChartPayload;
     suggestions?: { label: string; query: string }[];
+    foodLogData?: FoodLogMeal[];
 }
 
 const Chatbot: React.FC = () => {
@@ -125,7 +127,7 @@ const Chatbot: React.FC = () => {
         strong: ({ children }: any) => <strong className="font-bold">{children}</strong>,
         em: ({ children }: any) => <em className="italic">{children}</em>,
         img: ({ src, alt }: any) => (
-            <div className="my-3">
+            <span className="block my-3">
                 <img
                     src={src}
                     alt={alt}
@@ -136,8 +138,8 @@ const Chatbot: React.FC = () => {
                         e.target.nextElementSibling.style.display = "block";
                     }}
                 />
-                <div className="text-sm text-gray-500 italic mt-1 hidden">Image failed to load: {alt}</div>
-            </div>
+                <span className="block text-sm text-gray-500 italic mt-1 hidden">Image failed to load: {alt}</span>
+            </span>
         ),
         code: ({ children, className }: any) => {
             const isInline = !className;
@@ -228,6 +230,7 @@ const Chatbot: React.FC = () => {
             const agpChartData = data.agpChartData;
             const ehba1cTirData = data.ehba1cTirData;
             const suggestions = data.suggestions;
+            const foodLogData = data.foodLogData; 
             setChatHistory((prev) => [
                 ...prev,
                 {
@@ -238,6 +241,7 @@ const Chatbot: React.FC = () => {
                     agpChartData: agpChartData,
                     ehba1cTirData: ehba1cTirData,
                     suggestions: suggestions,
+                    foodLogData: foodLogData,   
                 },
             ]);
         } catch (error) {
@@ -590,6 +594,9 @@ const Chatbot: React.FC = () => {
                                         </div>
                                         {chat.role === "bot" && chat.chartData && (
                                             <ChatChart data={chat.chartData} />
+                                        )}
+                                        {chat.role === "bot" && chat.foodLogData && chat.foodLogData.length > 0 && (
+                                            <FoodLogChart meals={chat.foodLogData} />
                                         )}
                                     </div>
                                     {chat.role === "bot" && chat.suggestions && chat.suggestions.length > 0 && (
