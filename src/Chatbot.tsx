@@ -40,6 +40,59 @@ interface ChatMessage {
     foodLogData?: FoodLogMeal[];
 }
 
+// A glucose high/low pattern answer has this exact, unique header. Nothing else
+// the bot returns starts this way, so we collapse ONLY these messages.
+const GLUCOSE_PATTERN_RE = /had (high|low) glucose episodes\. The episodes occurred during:/;
+const PATTERN_COLLAPSE_AT = 5;
+
+function parseGlucosePattern(message: string) {
+    if (!GLUCOSE_PATTERN_RE.test(message)) return null;
+    const header: string[] = [];
+    const bullets: string[] = [];
+    const overall: string[] = [];
+    let seenBullet = false;
+    for (const raw of message.split("\n")) {
+        const t = raw.trim();
+        if (t.startsWith("*")) { bullets.push(raw); seenBullet = true; }
+        else if (t.startsWith("Overall pattern:")) { overall.push(raw); }
+        else if (!seenBullet && t) { header.push(raw); }
+    }
+    if (bullets.length === 0) return null;
+    return { header: header.join("\n"), bullets, overall: overall.join("\n") };
+}
+
+const BotMessage: React.FC<{ message: string; components: any }> = ({ message, components }) => {
+    const [expanded, setExpanded] = useState(false);
+    const md = (text: string) => (
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>{text}</ReactMarkdown>
+    );
+
+    const parsed = parseGlucosePattern(message);
+    if (!parsed) return md(message);   // every non-pattern message renders exactly as before
+
+    const { header, bullets, overall } = parsed;
+    const hasMore = bullets.length > PATTERN_COLLAPSE_AT;
+    const visible = hasMore && !expanded ? bullets.slice(0, PATTERN_COLLAPSE_AT) : bullets;
+    const hiddenCount = bullets.length - PATTERN_COLLAPSE_AT;
+
+    return (
+        <div>
+            {header && md(header)}
+            {md(visible.join("\n"))}
+            {hasMore && (
+                <button
+                    type="button"
+                    onClick={() => setExpanded((v) => !v)}
+                    className="mt-1 mb-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                    {expanded ? "Show less" : `Show ${hiddenCount} more hour${hiddenCount === 1 ? "" : "s"}`}
+                </button>
+            )}
+            {overall && md(overall)}
+        </div>
+    );
+};
+
 const Chatbot: React.FC = () => {
     // Toggle chatbot visibility
     const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -578,7 +631,7 @@ const Chatbot: React.FC = () => {
                                         <strong>{chat.role === "user" ? "You" : "Bot"}:</strong>{" "}
                                         <div className="mt-2">
                                             {chat.role === "bot" ? (
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{chat.message}</ReactMarkdown>
+                                                <BotMessage message={chat.message} components={markdownComponents} />
                                             ) : (
                                                 <span>{chat.message}</span>
                                             )}
