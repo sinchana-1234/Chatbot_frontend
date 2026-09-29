@@ -153,7 +153,7 @@ function DayView({ meals, title }: { meals: FoodLogMeal[]; title: string }) {
                             tickFormatter={hourLabel} tick={{ fontSize: 10 }} tickLine={false} />
                         <YAxis type="number" dataKey="y" domain={[0, 1]} hide />
                         <ZAxis range={[400, 400]} />
-                        <Tooltip content={<FoodTooltip />} cursor={false} />
+                        <Tooltip content={<FoodTooltip />} cursor={false} isAnimationActive={false} wrapperStyle={{ transition: "none" }} />
                         <Scatter data={points} shape={<MealFork />} isAnimationActive={false} />
                     </ScatterChart>
                 </ResponsiveContainer>
@@ -196,7 +196,7 @@ function WeekView({ meals, title, dates }: { meals: FoodLogMeal[]; title: string
                             tickFormatter={(i: number) => fmtDateShort(dates[i])}
                             tick={{ fontSize: 10 }} tickLine={false} />
                         <ZAxis range={[300, 300]} />
-                        <Tooltip content={<FoodTooltip />} cursor={false} />
+                        <Tooltip content={<FoodTooltip />} cursor={false} isAnimationActive={false} wrapperStyle={{ transition: "none" }} />
                         <Scatter data={points} shape={<MealFork />} isAnimationActive={false} />
                     </ScatterChart>
                 </ResponsiveContainer>
@@ -244,7 +244,7 @@ function MonthView({ meals, title, dates }: { meals: FoodLogMeal[]; title: strin
                                 ticks={[6, 9, 12, 15, 18, 21].filter((h) => h >= hMin && h <= hMax)}
                                 tickFormatter={hourLabel} tick={{ fontSize: 10 }} tickLine={false} />
                             <ZAxis range={[220, 220]} />
-                            <Tooltip content={<FoodTooltip />} cursor={false} />
+                            <Tooltip content={<FoodTooltip />} cursor={false} isAnimationActive={false} wrapperStyle={{ transition: "none" }} />
                             <Scatter data={points} shape={<MealFork />} isAnimationActive={false} />
                         </ScatterChart>
                     </ResponsiveContainer>
