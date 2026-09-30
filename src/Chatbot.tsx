@@ -111,6 +111,8 @@ const Chatbot: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     // Session ID to persist conversation context
     const [sessionId, setSessionId] = useState<string>("");
+    const [patientId, setPatientId] = useState<number | null>(null);      
+    const [patientName, setPatientName] = useState<string | null>(null);  
 
     // Voice recording state
     const [showMicOptions, setShowMicOptions] = useState<boolean>(false);
@@ -148,6 +150,16 @@ const Chatbot: React.FC = () => {
             sessionStorage.setItem("chatbot_session_id", storedSessionId);
         }
         setSessionId(storedSessionId);
+    }, []);
+
+    // Per-patient chat: the dashboard opens this iframe as ?patient_id=1002&patient_name=...
+    // In the global chat there are no params, so these stay null and nothing changes.
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const pid = params.get("patient_id");
+        if (pid && !Number.isNaN(Number(pid))) setPatientId(Number(pid));
+        const pname = params.get("patient_name");
+        if (pname) setPatientName(pname);
     }, []);
 
     // Cleanup audio graph on unmount (NEW)
@@ -264,6 +276,7 @@ const Chatbot: React.FC = () => {
                 body: JSON.stringify({
                     query: query,
                     sessionId: sessionId,
+                    ...(patientId ? { patient_id: patientId } : {}),   // per-patient chat only
                 }),
             });
             if (response.status === 401) {
@@ -521,6 +534,7 @@ const Chatbot: React.FC = () => {
                     audioBase64,                // expected key
                     language,                   // "regional" | "international"
                     sessionId: sessionId ?? "", // keep session continuity
+                    ...(patientId ? { patientId } : {}),   // per-patient chat only (backend accepts patientId)
                 }),
             });
 
