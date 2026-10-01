@@ -95,7 +95,11 @@ const BotMessage: React.FC<{ message: string; components: any }> = ({ message, c
 
 const Chatbot: React.FC = () => {
     // Toggle chatbot visibility
-    const [isOpen, setIsOpen] = useState<boolean>(false);
+    // Per-patient chat (?patient_id=) starts open; read synchronously so the first
+    // state message sent to the host page is already "open".
+    const [isOpen, setIsOpen] = useState<boolean>(
+        () => new URLSearchParams(window.location.search).has("patient_id")
+    );
     // User's text input
     const [userQuery, setUserQuery] = useState<string>("");
     // Chat history (user and bot messages)
@@ -144,10 +148,13 @@ const Chatbot: React.FC = () => {
 
     // Initialize session ID on mount
     useEffect(() => {
-        let storedSessionId = sessionStorage.getItem("chatbot_session_id");
+        // One session per patient so agent memory never carries over between patients.
+        const pid = new URLSearchParams(window.location.search).get("patient_id");
+        const sessionKey = pid ? `chatbot_session_id_p${pid}` : "chatbot_session_id";
+        let storedSessionId = sessionStorage.getItem(sessionKey);
         if (!storedSessionId) {
             storedSessionId = generateSessionId();
-            sessionStorage.setItem("chatbot_session_id", storedSessionId);
+            sessionStorage.setItem(sessionKey, storedSessionId);
         }
         setSessionId(storedSessionId);
     }, []);
@@ -157,10 +164,18 @@ const Chatbot: React.FC = () => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const pid = params.get("patient_id");
-        if (pid && !Number.isNaN(Number(pid))) setPatientId(Number(pid));
+        if (pid && !Number.isNaN(Number(pid))) {
+            setPatientId(Number(pid));
+        }
         const pname = params.get("patient_name");
         if (pname) setPatientName(pname);
     }, []);
+
+    // Tell the host page (iframe parent) whether the window is open so it can
+    // resize the iframe and not block clicks on the page behind the closed launcher.
+    useEffect(() => {
+        window.parent?.postMessage({ type: "glixify-chatbot-state", open: isOpen }, "*");
+    }, [isOpen]);
 
     // Cleanup audio graph on unmount (NEW)
     useEffect(() => {
@@ -287,6 +302,13 @@ const Chatbot: React.FC = () => {
                 return;
             }
             if (!response.ok) {
+                let detail = "";
+                try { detail = (await response.clone().json())?.detail ?? ""; } catch { /* non-JSON body */ }
+                console.error("chat/query failed", response.status, detail);
+                if (response.status === 403 && detail) {
+                    setChatHistory((prev) => [...prev, { role: "bot", message: String(detail) }]);
+                    return;
+                }
                 throw new Error("Failed to fetch response from the server.");
             }
             const data = await response.json();
