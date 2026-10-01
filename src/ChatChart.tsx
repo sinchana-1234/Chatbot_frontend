@@ -93,14 +93,14 @@ export default function ChatChart({ data }: ChatChartProps) {
     );
 
     return (
-        <div className="mt-2 bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+        <div className="mt-2 bg-white rounded-lg shadow-sm border border-gray-100 p-3" style={{ width: 520, maxWidth: "100%" }}>
             <p className="text-sm font-semibold text-gray-700 mb-2">{data.title}</p>
             {data.period && <p className="text-xs text-gray-500 -mt-1 mb-2">{data.period}</p>}
             {!showLegend && (
                 <p className="text-xs text-gray-500 mb-1">{data.series[0].name}</p>
             )}
-            <div style={{ width: "100%", height: showLegend ? 220 : 190 }}>
-                <ResponsiveContainer>
+            <div style={{ width: "100%" }}>
+                <ResponsiveContainer width="100%" aspect={showLegend ? 1.6 : 1.9}>
                     {data.type === "area" ? (
                         <AreaChart data={chartRows} margin={commonMargin}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />

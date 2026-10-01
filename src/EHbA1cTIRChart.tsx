@@ -23,12 +23,18 @@ const EHbA1cTIRChart: React.FC<EHbA1cTIRChartProps> = ({ periods }) => {
     }));
 
     return (
-        <div className="mt-3 bg-white rounded-lg border border-gray-300 p-3">
+        <div className="mt-3 bg-white rounded-lg border border-gray-300 p-3" style={{ width: 520, maxWidth: "100%" }}>
             <div className="text-center font-bold text-gray-700 mb-2">eHbA1c & TIR Trend</div>
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" aspect={1.8}>
                 <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="period" tick={{ fontSize: 9 }} />
+                    <XAxis
+                        dataKey="period"
+                        tick={{ fontSize: 9 }}
+                        interval="preserveStartEnd"
+                        minTickGap={16}
+                        tickMargin={6}
+                    />
                     <YAxis yAxisId="left" tick={{ fontSize: 10 }} />
                     <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} domain={[0, 100]} />
                     <Tooltip />

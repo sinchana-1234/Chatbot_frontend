@@ -121,7 +121,7 @@ function FoodTooltip({ active, payload }: any) {
 }
 
 const Card = ({ title, children }: { title: string; children: ReactNode }) => (
-    <div className="mt-2 bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+    <div className="mt-2 bg-white rounded-lg shadow-sm border border-gray-100 p-3" style={{ width: 520, maxWidth: "100%" }}>
         <p className="text-sm font-semibold text-gray-700 mb-2">{title}</p>
         {children}
     </div>
@@ -222,13 +222,11 @@ function MonthView({ meals, title, dates }: { meals: FoodLogMeal[]; title: strin
 
     const step = Math.max(1, Math.ceil(N / 14));
     const xticks = dates.map((_, i) => i).filter((i) => i % step === 0);
-    const width = Math.max(560, N * 26 + 110);
 
     return (
         <Card title={title}>
-            <div style={{ overflowX: "auto" }}>
-                <div style={{ width, height: 300 }}>
-                    <ResponsiveContainer>
+            <div style={{ width: "100%", height: 300 }}>
+                <ResponsiveContainer>
                         <ScatterChart margin={{ top: 12, right: 62, left: 0, bottom: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#eef1f5" />
                             {MEAL_WINDOWS.map((w) => (
@@ -241,7 +239,7 @@ function MonthView({ meals, title, dates }: { meals: FoodLogMeal[]; title: strin
                                 ticks={xticks} tickFormatter={(i: number) => fmtDateShort(dates[i])}
                                 tick={{ fontSize: 9 }} tickLine={false} />
                             <YAxis type="number" dataKey="hour" domain={[hMin, hMax]} reversed
-                                ticks={[6, 9, 12, 15, 18, 21].filter((h) => h >= hMin && h <= hMax)}
+                                ticks={[0, 3, 6, 9, 12, 15, 18, 21, 24].filter((h) => h >= hMin && h <= hMax)}
                                 tickFormatter={hourLabel} tick={{ fontSize: 10 }} tickLine={false} />
                             <ZAxis range={[220, 220]} />
                             <Tooltip content={<FoodTooltip />} cursor={false} isAnimationActive={false} wrapperStyle={{ transition: "none" }} />
@@ -249,7 +247,6 @@ function MonthView({ meals, title, dates }: { meals: FoodLogMeal[]; title: strin
                         </ScatterChart>
                     </ResponsiveContainer>
                 </div>
-            </div>
         </Card>
     );
 }

@@ -30,7 +30,7 @@ const TIRChart: React.FC<TIRChartProps> = ({ tir }) => {
     const sliceData = allEntries.filter((d) => d.value > 0);
 
     return (
-        <div className="mt-3 bg-white rounded-lg border border-gray-300 overflow-hidden">
+        <div className="mt-3 bg-white rounded-lg border border-gray-300 overflow-hidden" style={{ width: 520, maxWidth: "100%" }}>
             <div className="px-4 py-3 border-b border-gray-200">
                 <span className="font-bold text-gray-900">Time in Range (TIR)</span>
             </div>
@@ -43,7 +43,7 @@ const TIRChart: React.FC<TIRChartProps> = ({ tir }) => {
                             nameKey="name"
                             cx="50%"
                             cy="50%"
-                            outerRadius={90}
+                            outerRadius="80%"
                             label={false}
                         >
                             {sliceData.map((entry) => (

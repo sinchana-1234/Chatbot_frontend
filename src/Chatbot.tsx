@@ -112,7 +112,7 @@ const Chatbot: React.FC = () => {
     // Session ID to persist conversation context
     const [sessionId, setSessionId] = useState<string>("");
     const [patientId, setPatientId] = useState<number | null>(null);      
-    const [patientName, setPatientName] = useState<string | null>(null);  
+    const [, setPatientName] = useState<string | null>(null);  
 
     // Voice recording state
     const [showMicOptions, setShowMicOptions] = useState<boolean>(false);
@@ -633,16 +633,23 @@ const Chatbot: React.FC = () => {
                     </div>
 
                     {/* Chat History */}
-                    <div className="min-h-90 flex-1 overflow-y-auto bg-gray-100">
+                    <div className="min-h-90 flex-1 overflow-y-auto overflow-x-hidden bg-gray-100">
                         <div className="p-3">
                             {chatHistory.map((chat, index) => (
                                 <div key={index} className={`flex flex-col ${chat.role === "user" ? "items-end" : "items-start"} mb-3`}>
                                     <div
-                                        className={`max-w-[85%] rounded-lg p-3 shadow ${
-                                            chat.role === "user" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+                                        className={`flex items-start gap-2 max-w-[85%] ${
+                                            chat.role === "user" ? "flex-row-reverse" : "flex-row"
                                         }`}
                                     >
-                                        <strong>{chat.role === "user" ? "You" : "Bot"}:</strong>{" "}
+                                        <span className="text-2xl flex-shrink-0 mt-1 leading-none">
+                                            {chat.role === "user" ? "👤" : "🤖"}
+                                        </span>
+                                        <div
+                                            className={`min-w-0 rounded-lg p-3 shadow ${
+                                                chat.role === "user" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
+                                            }`}
+                                        >
                                         <div className="mt-2">
                                             {chat.role === "bot" ? (
                                                 <BotMessage message={chat.message} components={markdownComponents} />
@@ -665,6 +672,7 @@ const Chatbot: React.FC = () => {
                                         {chat.role === "bot" && chat.foodLogData && chat.foodLogData.length > 0 && (
                                             <FoodLogChart meals={chat.foodLogData} />
                                         )}
+                                        </div>
                                     </div>
                                     {chat.role === "bot" && chat.suggestions && chat.suggestions.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mt-2">
@@ -705,8 +713,8 @@ const Chatbot: React.FC = () => {
                             )}
                             <div ref={chatEndRef} />
                         </div>
-                        {/* Predefined Questions */}
-                        {!isLoading && (
+                        {/* Predefined Questions — hidden for now (agent has no pairing docs to answer these) */}
+                        {false && !isLoading && (
                             <div className="flex flex-wrap gap-2 border-t border-gray-300 bg-gray-50 p-3">
                                 {predefinedQuestions.map((question, index) => (
                                     <button

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     ComposedChart,
     Area,
@@ -32,10 +32,9 @@ const GREEN = "#6B8E23";
 
 const Y_MIN = 0;
 const Y_MAX = 300;
-const CHART_HEIGHT = 280;
 const CHART_TOP_MARGIN = 5;
 const CHART_BOTTOM_MARGIN = 5;
-const PLOT_HEIGHT = CHART_HEIGHT - CHART_TOP_MARGIN - CHART_BOTTOM_MARGIN - 25; // approx axis space
+const AGP_ASPECT = 1.6;   // width : height — height now scales with width
 
 const SERIES = [
     { key: "p90", label: "p90 (upper band)", color: PINK },
@@ -45,45 +44,43 @@ const SERIES = [
     { key: "p10", label: "p10 (lower band)", color: PINK },
 ];
 
-const CustomTooltip = ({ active, payload, label, coordinate, onMatch }: any) => {
-    if (!active || !payload || !payload.length || !coordinate) {
-        if (onMatch) onMatch(null);
-        return null;
-    }
-    const p = payload[0]?.payload;
-    if (!p) return null;
+const CustomTooltip = ({ active, payload, label, coordinate, onMatch, plotHeight }: any) => {
+    // Figure out which band the cursor is nearest — WITHOUT calling setState
+    // during render (that caused the "update AGPChart while rendering
+    // CustomTooltip" warning).
+    const p = payload && payload.length ? payload[0]?.payload : null;
+    let matched: { key: string; label: string; color: string } | null = null;
+    let value: number | null = null;
 
-    // Convert cursor pixel Y back to a data value using the fixed Y domain,
-    // then find whichever series (p10/p25/p50/p75/p90) is numerically closest.
-    const yFraction = (coordinate.y - CHART_TOP_MARGIN) / PLOT_HEIGHT;
-    const cursorValue = Y_MAX - yFraction * (Y_MAX - Y_MIN);
-
-    let closestKey = "p50";
-    let closestDist = Infinity;
-    for (const s of SERIES) {
-        const dist = Math.abs(p[s.key] - cursorValue);
-        if (dist < closestDist) {
-            closestDist = dist;
-            closestKey = s.key;
-        }
-    }
-    const matched = SERIES.find((s) => s.key === closestKey)!;
-
-    if (onMatch) {
-        onMatch((prev: any) => {
-            if (prev && prev.time === label && prev.key === closestKey) {
-                return prev; // unchanged — return the same reference, no re-render
+    if (active && p && coordinate && plotHeight) {
+        const yFraction = (coordinate.y - CHART_TOP_MARGIN) / plotHeight;
+        const cursorValue = Y_MAX - yFraction * (Y_MAX - Y_MIN);
+        let closestKey = "p50";
+        let closestDist = Infinity;
+        for (const s of SERIES) {
+            const dist = Math.abs(p[s.key] - cursorValue);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestKey = s.key;
             }
-            return { time: label, key: closestKey, value: p[closestKey], color: matched.color };
-        });
+        }
+        matched = SERIES.find((s) => s.key === closestKey)!;
+        value = p[closestKey];
     }
 
+    // Report the match to the parent AFTER commit, never during render.
+    useEffect(() => {
+        if (!onMatch) return;
+        onMatch(matched ? { time: label, key: matched.key, value, color: matched.color } : null);
+    }, [onMatch, label, matched?.key, value]);
+
+    if (!matched) return null;
     return (
         <div className="bg-gray-900 text-white rounded-md shadow-md px-3 py-2 text-xs">
             <div className="font-bold mb-1">{label}</div>
             <div className="flex items-center gap-1">
                 <span className="inline-block w-3 h-3" style={{ backgroundColor: matched.color }} />
-                {matched.label}: {p[closestKey]}
+                {matched.label}: {value}
             </div>
         </div>
     );
@@ -92,6 +89,21 @@ const CustomTooltip = ({ active, payload, label, coordinate, onMatch }: any) => 
 const AGPChart: React.FC<AGPChartProps> = ({ timeBlocks }) => {
     const [hidden, setHidden] = useState<Record<string, boolean>>({});
     const [hoverPoint, setHoverPoint] = useState<{ time: string; key: string; value: number; color: string } | null>(null);
+    const plotRef = useRef<HTMLDivElement>(null);
+    const [plotHeight, setPlotHeight] = useState<number>(200);
+
+    useEffect(() => {
+        const el = plotRef.current;
+        if (!el) return;
+        const update = () => {
+            const h = el.clientHeight;   // chart SVG height (set by aspect)
+            if (h) setPlotHeight(Math.max(1, h - CHART_TOP_MARGIN - CHART_BOTTOM_MARGIN - 25));
+        };
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
 
     if (!timeBlocks || timeBlocks.length === 0) return null;
 
@@ -116,7 +128,7 @@ const AGPChart: React.FC<AGPChartProps> = ({ timeBlocks }) => {
     const medianHidden = hidden.p50;
 
     return (
-        <div className="mt-3 bg-white rounded-lg border border-gray-300 p-3">
+        <div className="mt-3 bg-white rounded-lg border border-gray-300 p-3" style={{ width: 520, maxWidth: "100%" }}>
             <div className="text-center mb-2">
                 <div className="font-bold text-green-700">Ambulatory Glucose Profile (AGP)</div>
                 <div className="text-xs text-gray-500 mt-0.5">Median and glucose variability bands</div>
@@ -158,17 +170,23 @@ const AGPChart: React.FC<AGPChartProps> = ({ timeBlocks }) => {
                     p50 (median)
                 </span>
             </div>
-            <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+            <div ref={plotRef} style={{ width: "100%" }}>
+            <ResponsiveContainer width="100%" aspect={AGP_ASPECT}>
                 <ComposedChart data={data} margin={{ top: CHART_TOP_MARGIN, right: 20, left: 0, bottom: CHART_BOTTOM_MARGIN }}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+                    <XAxis
+                        dataKey="time"
+                        tick={{ fontSize: 10 }}
+                        interval="preserveStartEnd"  // auto-drop labels that don't fit
+                        minTickGap={16}              // thins on narrow widths, fills on wide
+                        tickMargin={6}
+                    />
                     <YAxis
                         domain={[Y_MIN, Y_MAX]}
                         ticks={[0, 50, 100, 150, 200, 250, 300]}
                         tick={{ fontSize: 10 }}
                     />
-                    <Tooltip content={<CustomTooltip onMatch={setHoverPoint} />} cursor={false} />
-
+                    <Tooltip content={<CustomTooltip onMatch={setHoverPoint} plotHeight={plotHeight} />} cursor={false} />
                     {!outerHidden && (
                         <>
                             <Area type="monotone" dataKey="p10" stackId="outer" stroke="none" fill="transparent" dot={false} activeDot={false} />
@@ -202,7 +220,7 @@ const AGPChart: React.FC<AGPChartProps> = ({ timeBlocks }) => {
                     )}
                 </ComposedChart>
             </ResponsiveContainer>
-        </div>
+            </div>        </div>
     );
 };
 
